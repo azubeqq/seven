@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  {{ flask_app_name }}:
+    build: ./app
+    image: {{ flask_app_image }}
+    container_name: {{ flask_app_name }}
+    ports:
+      - "{{ flask_app_port }}:5000"
+    environment:
+      - DATABASE_HOST={{ flask_db_host }}
+      - DATABASE_PORT={{ flask_db_port }}
+      - DATABASE_NAME={{ flask_db_name }}
+      - DATABASE_USER={{ flask_db_user }}
+      - DATABASE_PASSWORD={{ flask_db_password }}
+    networks:
+      - {{ flask_network }}
+    restart: unless-stopped
+    deploy:
+      replicas: {{ flask_app_replicas }}
+
+networks:
+  {{ flask_network }}:
+    external: true
+    name: {{ flask_network }}

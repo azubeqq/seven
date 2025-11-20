@@ -1,0 +1,68 @@
+# roles/app/templates/alertmanager.yml.j2
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'null'  # Не шлёт никуда
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 12h
+
+receivers:
+  - name: 'null'
+    # Пустой receiver - алерты просто показываются в UI
+
+{#
+    # roles/app/templates/alertmanager.yml.j2
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'your-email@gmail.com'  # Твой email
+  smtp_auth_username: 'your-email@gmail.com'
+  smtp_auth_password: '{{ gmail_app_password }}'  # App Password, не обычный пароль!
+  smtp_require_tls: true
+
+route:
+  receiver: 'email-alerts'
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 12h
+
+receivers:
+  - name: 'email-alerts'
+    email_configs:
+      - to: 'your-email@gmail.com'  # Куда слать
+        headers:
+          Subject: '🚨 Alert: {{ '{{' }} .GroupLabels.alertname {{ '}}' }}'
+        html: |
+          <h2>Alert: {{ '{{' }} .GroupLabels.alertname {{ '}}' }}</h2>
+          <p><b>Severity:</b> {{ '{{' }} .CommonLabels.severity {{ '}}' }}</p>
+          <p><b>Summary:</b> {{ '{{' }} .CommonAnnotations.summary {{ '}}' }}</p>
+          <p><b>Description:</b> {{ '{{' }} .CommonAnnotations.description {{ '}}' }}</p>
+          <p><b>Time:</b> {{ '{{' }} .StartsAt {{ '}}' }}</p>
+
+# alertmanager.yml.j2
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'telegram'
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 12h
+
+receivers:
+  - name: 'telegram'
+    telegram_configs:
+      - bot_token: '{{ telegram_bot_token }}'  # Добавь в all.yml
+        chat_id: {{ telegram_chat_id }}        # Добавь в all.yml
+        parse_mode: 'HTML'
+        message: |
+          <b>Alert:</b> {{ '{{' }} .GroupLabels.alertname {{ '}}' }}
+          <b>Severity:</b> {{ '{{' }} .CommonLabels.severity {{ '}}' }}
+          <b>Summary:</b> {{ '{{' }} .CommonAnnotations.summary {{ '}}' }}
+          <b>Description:</b> {{ '{{' }} .CommonAnnotations.description {{ '}}' }}
+#}

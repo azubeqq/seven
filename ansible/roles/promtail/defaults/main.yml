@@ -1,0 +1,19 @@
+---
+promtail_name: "promtail"
+
+promtail_base_dir: "/opt/{{ promtail_name }}"
+promtail_compose_file: "{{ promtail_base_dir }}/docker-compose.yml"
+
+promtail_image: "grafana/promtail:latest"
+
+promtail_config_path: "{{ promtail_base_dir }}/promtail-config.yml"
+
+loki_url: "http://localhost:3100/loki/api/v1/push"
+
+promtail_scrape_config:
+  - job_name: system
+    static_configs:
+      - targets: ['localhost']
+        labels:
+          job: varlogs
+          __path__: /var/log/*log

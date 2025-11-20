@@ -1,0 +1,36 @@
+---
+flask_app_name: "flask_app"
+
+flask_app_base_dir: "/opt/{{ flask_app_name }}"
+flask_app_compose_file: "{{ flask_app_base_dir }}/docker-compose.yml"
+
+flask_app_image: "myflaskapp:latest"
+flask_app_container_name: "{{ flask_app_name }}"
+
+flask_app_port: 5000
+
+flask_app_env:
+  FLASK_ENV: "production"
+  LOG_LEVEL: "info"
+
+flask_app_replicas: 1
+
+
+
+
+---
+# Дефолтные переменные (можно переопределить)
+flask_app_name: flask-app
+flask_app_image: myflaskapp:1.0.0
+flask_app_port: 5000
+flask_app_replicas: 1  # Для будущего scaling
+
+# Database connection
+flask_db_host: "{{ postgresql_host | default('localhost') }}"
+flask_db_port: "{{ postgresql_port | default(5432) }}"
+flask_db_name: "{{ postgresql_db_name }}"
+flask_db_user: "{{ postgresql_user }}"
+flask_db_password: "{{ postgresql_password }}"
+
+# Network
+flask_network: "{{ docker_network | default('app-network') }}"

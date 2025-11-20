@@ -1,0 +1,9 @@
+---
+node_exporter_name: "node_exporter"
+
+node_exporter_base_dir: "/opt/{{ node_exporter_name }}"
+node_exporter_compose_file: "{{ node_exporter_base_dir }}/docker-compose.yml"
+
+node_exporter_image: "prom/node-exporter:latest"
+
+node_exporter_port: 9100

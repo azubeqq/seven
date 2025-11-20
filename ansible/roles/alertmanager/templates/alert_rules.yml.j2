@@ -1,0 +1,199 @@
+# ========================================
+# PROMETHEUS ALERT RULES
+# ========================================
+# Правила для мониторинга инфраструктуры и приложений
+
+{% raw %}
+
+groups:
+  # --- Базовые алерты ---
+  - name: basic_alerts
+    interval: 30s
+    rules:
+      # Контейнер недоступен (через up метрику)
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m  # Увеличено до 2 минут, чтобы избежать ложных срабатываний при рестарте
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for more than 2 minutes."
+
+      # Контейнер не виден в cAdvisor
+      - alert: ContainerNotSeen
+        expr: (time() - container_last_seen{name=~"web_app|postgres_db|prometheus|grafana|alertmanager"}) > 120
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container {{ $labels.name }} not seen"
+          description: "Container {{ $labels.name }} hasn't been seen by cAdvisor for more than 2 minutes."
+
+  # --- Системные ресурсы ---
+  - name: system_resources
+    interval: 30s
+    rules:
+      # Высокая загрузка CPU (хост)
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m  # 5 минут стабильно высокого CPU
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | humanize }}% (threshold: 80%) for more than 5 minutes."
+
+      # Критически высокая загрузка CPU
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | humanize }}% (threshold: 95%)."
+
+      # Высокое использование памяти
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanize }}% (threshold: 85%)."
+
+      # Критически мало памяти
+      - alert: CriticalMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanize }}% (threshold: 95%)."
+
+      # Заканчивается место на диске
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Root filesystem has {{ $value | humanize }}% free space remaining."
+
+      # Критически мало места на диске
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Root filesystem has only {{ $value | humanize }}% free space remaining."
+
+  # --- Database Alerts ---
+  - name: database_alerts
+    interval: 30s
+    rules:
+      # PostgreSQL недоступен (через postgres_exporter)
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL on {{ $labels.instance }} has been down for more than 2 minutes."
+
+      # Слишком много подключений к БД
+      - alert: PostgresTooManyConnections
+        expr: sum(pg_stat_activity_count) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL has too many connections"
+          description: "PostgreSQL has {{ $value }} active connections."
+
+      # Медленные запросы в БД
+      - alert: PostgresSlowQueries
+        expr: rate(pg_stat_activity_max_tx_duration[5m]) > 60
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL has slow queries"
+          description: "Longest transaction duration is {{ $value | humanize }}s."
+
+  # --- Application Alerts ---
+  - name: application_alerts
+    interval: 30s
+    rules:
+      # Flask приложение отвечает медленно
+      - alert: SlowFlaskResponse
+        expr: histogram_quantile(0.95, rate(flask_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Flask app is responding slowly"
+          description: "95th percentile response time is {{ $value | humanize }}s (threshold: 2s)."
+
+      # Много 5xx ошибок
+      - alert: HighErrorRate
+        expr: rate(flask_http_request_total{status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate in Flask app"
+          description: "Flask is returning {{ $value | humanize }} 5xx errors per second."
+
+      # Flask не может подключиться к БД
+      - alert: FlaskDatabaseConnectionFailed
+        expr: up{job="flask"} == 1 and rate(flask_http_request_total{status="500"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Flask cannot connect to database"
+          description: "Flask is returning 500 errors, database connection might be broken."
+
+  # --- Container Resource Alerts ---
+  - name: container_resources
+    interval: 30s
+    rules:
+      # Контейнер использует слишком много CPU
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name!=""}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} high CPU usage"
+          description: "Container {{ $labels.name }} is using {{ $value | humanize }}% CPU."
+
+      # Контейнер использует слишком много памяти
+      - alert: ContainerHighMemory
+        expr: (container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} high memory usage"
+          description: "Container {{ $labels.name }} is using {{ $value | humanize }}% of its memory limit."
+
+      # Контейнер перезапускается слишком часто
+      - alert: ContainerRestartingOften
+        expr: rate(container_last_seen{name!=""}[15m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} restarting frequently"
+          description: "Container {{ $labels.name }} has restarted {{ $value | humanize }} times in the last 15 minutes."
+
+{% endraw %}

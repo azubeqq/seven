@@ -1,0 +1,21 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+.terraform.lock.hcl
+
+# Ansible
+*.retry
+group_vars/vault.yml
+inventory.ini
+*.log
+ansible/*.log
+
+# SSH Keys
+*.pem
+*.key
+
+# IDE
+.vscode/
+.idea/

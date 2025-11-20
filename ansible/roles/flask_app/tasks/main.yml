@@ -1,0 +1,24 @@
+---
+- name: Create Flask app directory
+  ansible.builtin.file:
+    path: "{{ app_dir }}/flask"
+    state: directory
+    owner: "{{ app_user }}"
+    mode: '0755'
+
+- name: Copy Flask application files
+  ansible.builtin.copy:
+    src: app/
+    dest: "{{ app_dir }}/flask/app/"
+    owner: "{{ app_user }}"
+
+- name: Template Flask docker-compose
+  ansible.builtin.template:
+    src: docker-compose-flask.yml.j2
+    dest: "{{ app_dir }}/flask/docker-compose.yml"
+    owner: "{{ app_user }}"
+
+- name: Start Flask container
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_dir }}/flask"
+    state: present

@@ -1,0 +1,32 @@
+---
+prometheus_name: "prometheus"
+
+prometheus_base_dir: "/opt/{{ prometheus_name }}"
+prometheus_compose_file: "{{ prometheus_base_dir }}/docker-compose.yml"
+prometheus_config_dir: "{{ prometheus_base_dir }}/config"
+
+prometheus_image: "prom/prometheus:latest"
+
+prometheus_port: 9090
+
+prometheus_scrape_interval: "15s"
+
+prometheus_targets:
+  node_exporter: "localhost:9100"
+  postgres_exporter: "localhost:9187"
+
+prometheus_alert_rules_file: "{{ prometheus_config_dir }}/alerts.yml"
+
+
+---
+prometheus_version: v2.48.0
+prometheus_port: 9090
+prometheus_retention: 15d
+prometheus_storage_size: 10GB
+
+# Targets to scrape
+prometheus_scrape_targets:
+  - job_name: flask
+    targets: ["{{ app_private_ip }}:5000"]
+  - job_name: node-exporter
+    targets: ["{{ app_private_ip }}:9100"]

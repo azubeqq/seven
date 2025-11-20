@@ -1,0 +1,14 @@
+---
+grafana_name: "grafana"
+
+grafana_base_dir: "/opt/{{ grafana_name }}"
+grafana_compose_file: "{{ grafana_base_dir }}/docker-compose.yml"
+
+grafana_image: "grafana/grafana:latest"
+
+grafana_port: 3000
+
+grafana_admin_user: "admin"
+grafana_admin_password: "admin"
+
+grafana_data_dir: "/var/lib/grafana"

@@ -1,0 +1,12 @@
+---
+loki_name: "loki"
+
+loki_base_dir: "/opt/{{ loki_name }}"
+loki_compose_file: "{{ loki_base_dir }}/docker-compose.yml"
+loki_config_path: "{{ loki_base_dir }}/loki-config.yml"
+
+loki_image: "grafana/loki:latest"
+
+loki_port: 3100
+
+loki_storage_dir: "/var/loki"

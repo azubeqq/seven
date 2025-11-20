@@ -1,0 +1,12 @@
+---
+# /ansible/roles/common/tasks/main.yml
+
+common_packages:
+  - curl
+  - vim
+  - htop
+  - git
+  - net-tools
+  - wget
+
+timezone: "UTC"

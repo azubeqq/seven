@@ -1,0 +1,16 @@
+---
+postgres_exporter_name: "postgres_exporter"
+
+postgres_exporter_base_dir: "/opt/{{ postgres_exporter_name }}"
+postgres_exporter_compose_file: "{{ postgres_exporter_base_dir }}/docker-compose.yml"
+
+postgres_exporter_image: "prom/postgres-exporter:latest"
+
+postgres_exporter_port: 9187
+
+postgres_exporter_data_source:
+  host: "127.0.0.1"
+  port: 5432
+  user: "app"
+  password: "password123"
+  dbname: "appdb"

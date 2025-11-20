@@ -1,0 +1,38 @@
+
+
+
+
+
+
+---
+- name: Create Prometheus directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+  loop:
+    - "{{ app_dir }}/prometheus"
+    - "{{ app_dir }}/prometheus/alerts"
+
+- name: Template Prometheus config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ app_dir }}/prometheus/prometheus.yml"
+    owner: "{{ app_user }}"
+
+- name: Template alert rules
+  ansible.builtin.template:
+    src: alerts.yml.j2
+    dest: "{{ app_dir }}/prometheus/alerts/alerts.yml"
+    owner: "{{ app_user }}"
+
+- name: Template Prometheus docker-compose
+  ansible.builtin.template:
+    src: docker-compose-prometheus.yml.j2
+    dest: "{{ app_dir }}/prometheus/docker-compose.yml"
+    owner: "{{ app_user }}"
+
+- name: Start Prometheus
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_dir }}/prometheus"
+    state: present

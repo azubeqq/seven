@@ -1,0 +1,17 @@
+---
+alertmanager_name: "alertmanager"
+
+alertmanager_base_dir: "/opt/{{ alertmanager_name }}"
+alertmanager_compose_file: "{{ alertmanager_base_dir }}/docker-compose.yml"
+
+alertmanager_image: "prom/alertmanager:latest"
+
+alertmanager_port: 9093
+
+alertmanager_config:
+  global:
+    resolve_timeout: 5m
+  route:
+    receiver: 'default'
+  receivers:
+    - name: 'default'
