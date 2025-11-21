@@ -1,9 +1,36 @@
+# ========================================
+# РОЛЬ: node_exporter
+# Экспортер метрик хоста (CPU, RAM, Disk, Network)
+# ========================================
+
+# --- roles/node_exporter/defaults/main.yml ---
 ---
-node_exporter_name: "node_exporter"
+# Директория для конфигурации
+node_exporter_dir: "{{ base_dir }}/node_exporter"
 
-node_exporter_base_dir: "/opt/{{ node_exporter_name }}"
-node_exporter_compose_file: "{{ node_exporter_base_dir }}/docker-compose.yml"
+# Docker образ
+node_exporter_image: "prom/node-exporter:v1.7.0"
 
-node_exporter_image: "prom/node-exporter:latest"
+# Имя контейнера
+node_exporter_container_name: "node_exporter"
 
+# Порт для метрик
 node_exporter_port: 9100
+
+# Collectors - какие метрики собирать
+# Отключаем ненужные для уменьшения нагрузки
+node_exporter_disabled_collectors:
+  - "arp"        # ARP таблица (редко нужна)
+  - "bcache"     # Block cache (если не используется)
+  - "bonding"    # Network bonding
+  - "btrfs"      # BTRFS filesystem
+  - "conntrack"  # Connection tracking
+  - "fibrechannel"
+  - "infiniband"
+  - "ipvs"
+  - "nfs"
+  - "nfsd"
+  - "nvme"
+  - "rapl"       # Intel power metrics
+  - "tapestats"
+  - "zfs"
