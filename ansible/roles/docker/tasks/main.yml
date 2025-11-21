@@ -1,1 +1,56 @@
+# --- roles/docker/tasks/main.yml ---
+---
+# Задачи установки и настройки Docker
 
+# Устанавливаем Docker из репозитория Amazon Linux
+- name: Install Docker engine
+  ansible.builtin.yum:
+    name: docker
+    state: present
+
+# Директория для конфига (может не существовать)
+- name: Create Docker daemon config directory
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    mode: '0755'
+
+# Настраиваем Docker daemon (metrics, logging и т.д.)
+- name: Configure Docker daemon
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: "{{ docker_daemon_config_path }}"
+    mode: '0644'
+  notify: Restart Docker
+
+# Docker должен работать всегда
+- name: Enable and start Docker service
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true   # Автозапуск при boot
+    state: started  # Запустить сейчас
+
+# Позволяет запускать docker без sudo
+- name: Add user to docker group
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    groups: docker
+    append: true
+
+# Устанавливаем docker-compose как отдельный бинарник
+- name: Install Docker Compose (standalone binary)
+  ansible.builtin.get_url:
+    url: "{{ docker_compose_url }}"
+    dest: "{{ docker_compose_path }}"
+    mode: '0755'
+
+# Проверяем что установилось корректно
+- name: Verify Docker Compose installation
+  ansible.builtin.command:
+    cmd: "{{ docker_compose_path }} version"
+  register: compose_version
+  changed_when: false
+
+- name: Show Docker Compose version
+  ansible.builtin.debug:
+    msg: "Docker Compose installed: {{ compose_version.stdout }}"
