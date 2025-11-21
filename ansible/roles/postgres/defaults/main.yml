@@ -1,21 +1,32 @@
+# ========================================
+# РОЛЬ: postgres
+# PostgreSQL база данных
+# ========================================
+
+# --- roles/postgres/defaults/main.yml ---
 ---
-postgres_name: "postgres"
+# Директория для файлов PostgreSQL
+postgres_dir: "{{ base_dir }}/postgres"
 
-postgres_base_dir: "/opt/{{ postgres_name }}"
-postgres_compose_file: "{{ postgres_base_dir }}/docker-compose.yml"
+# Docker образ PostgreSQL
+# Используем alpine для минимального размера
+postgres_image: "postgres:14.10-alpine"
 
-postgres_image: "postgres:15"
-postgres_container_name: "{{ postgres_name }}"
+# Имя контейнера
+postgres_container_name: "postgres_db"
 
+# Порт PostgreSQL (внутренний и внешний)
 postgres_port: 5432
 
-postgres_db: "appdb"
-postgres_user: "app"
-postgres_password: "password123"
+# Настройки базы данных
+postgres_db_name: "appdb"
+postgres_db_user: "appuser"
+# postgres_db_password берётся из group_vars/all.yml (db_password)
 
-postgres_data_dir: "/var/lib/postgresql/data"
+# Имя Docker volume для persistent данных
+postgres_volume_name: "postgres_data"
 
-postgres_env:
-  POSTGRES_DB: "{{ postgres_db }}"
-  POSTGRES_USER: "{{ postgres_user }}"
-  POSTGRES_PASSWORD: "{{ postgres_password }}"
+# Healthcheck настройки
+postgres_healthcheck_interval: "10s"
+postgres_healthcheck_timeout: "5s"
+postgres_healthcheck_retries: 5
