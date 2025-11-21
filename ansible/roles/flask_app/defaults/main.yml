@@ -1,36 +1,32 @@
+# ========================================
+# РОЛЬ: flask_app
+# Flask приложение
+# ========================================
+
+# --- roles/flask_app/defaults/main.yml ---
 ---
-flask_app_name: "flask_app"
+# Директория для Flask приложения
+flask_dir: "{{ base_dir }}/flask"
 
-flask_app_base_dir: "/opt/{{ flask_app_name }}"
-flask_app_compose_file: "{{ flask_app_base_dir }}/docker-compose.yml"
+# Docker образ (будет собираться локально)
+flask_image: "flask-app:latest"
 
-flask_app_image: "myflaskapp:latest"
-flask_app_container_name: "{{ flask_app_name }}"
+# Имя контейнера
+flask_container_name: "flask_app"
 
-flask_app_port: 5000
+# Порт приложения
+flask_port: 5000
 
-flask_app_env:
-  FLASK_ENV: "production"
-  LOG_LEVEL: "info"
+# Настройки подключения к БД
+# Используем имя контейнера PostgreSQL как hostname
+flask_db_host: "{{ postgres_container_name }}"
+flask_db_port: "{{ postgres_port }}"
+flask_db_name: "{{ postgres_db_name }}"
+flask_db_user: "{{ postgres_db_user }}"
+# flask_db_password берётся из db_password
 
-flask_app_replicas: 1
-
-
-
-
----
-# Дефолтные переменные (можно переопределить)
-flask_app_name: flask-app
-flask_app_image: myflaskapp:1.0.0
-flask_app_port: 5000
-flask_app_replicas: 1  # Для будущего scaling
-
-# Database connection
-flask_db_host: "{{ postgresql_host | default('localhost') }}"
-flask_db_port: "{{ postgresql_port | default(5432) }}"
-flask_db_name: "{{ postgresql_db_name }}"
-flask_db_user: "{{ postgresql_user }}"
-flask_db_password: "{{ postgresql_password }}"
-
-# Network
-flask_network: "{{ docker_network | default('app-network') }}"
+# Healthcheck настройки
+flask_healthcheck_interval: "30s"
+flask_healthcheck_timeout: "10s"
+flask_healthcheck_retries: 3
+flask_healthcheck_start_period: "40s"
