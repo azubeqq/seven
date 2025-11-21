@@ -1,0 +1,47 @@
+# --- roles/loki/templates/docker-compose-loki.yml.j2 ---
+# ========================================
+# LOKI DOCKER COMPOSE
+# ========================================
+version: '3.8'
+
+services:
+  {{ loki_container_name }}:
+    image: "{{ loki_image }}"
+    container_name: "{{ loki_container_name }}"
+    
+    # Путь к конфигурационному файлу
+    command:
+      - '-config.file=/etc/loki/loki-config.yml'
+    
+    ports:
+      # HTTP API (для Grafana, Promtail)
+      - "{{ loki_port }}:3100"
+    
+    volumes:
+      # Конфиг Loki (read-only)
+      - ./loki-config.yml:/etc/loki/loki-config.yml:ro
+      # Данные (chunks, indexes)
+      - {{ loki_volume_name }}:/loki
+    
+    # Запуск от root для записи в /loki
+    # В продакшене лучше настроить права на volume
+    user: "0"
+    
+    networks:
+      - {{ docker_network_name }}
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  {{ loki_volume_name }}:
+    driver: local
+
+networks:
+  {{ docker_network_name }}:
+    external: true
