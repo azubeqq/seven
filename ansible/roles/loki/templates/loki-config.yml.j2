@@ -1,0 +1,134 @@
+# --- roles/loki/templates/loki-config.yml.j2 ---
+# ========================================
+# LOKI CONFIGURATION
+# ========================================
+# Loki - система агрегации логов
+# Оптимизирован для:
+# - Индексирование по labels (как Prometheus)
+# - НЕ индексирует содержимое логов (экономит ресурсы)
+# - Сжатие и эффективное хранение
+# ========================================
+
+# Отключить мультитенантность (не нужна для одного проекта)
+auth_enabled: false
+
+# ========================================
+# SERVER - настройки HTTP/gRPC сервера
+# ========================================
+server:
+  # HTTP API порт (для Grafana, Promtail)
+  http_listen_port: {{ loki_port }}
+  
+  # gRPC порт (внутренняя коммуникация)
+  grpc_listen_port: {{ loki_grpc_port }}
+  
+  # Таймауты
+  http_server_read_timeout: 30s
+  http_server_write_timeout: 30s
+
+# ========================================
+# COMMON - общие настройки
+# ========================================
+common:
+  # Базовый путь для данных
+  path_prefix: {{ loki_data_path }}
+  
+  # Хранилище
+  storage:
+    # Используем локальную файловую систему
+    # Для продакшена рекомендуется S3/GCS
+    filesystem:
+      # Где хранить chunks (сами логи)
+      chunks_directory: {{ loki_chunks_dir }}
+      # Где хранить правила алертов
+      rules_directory: {{ loki_rules_dir }}
+  
+  # Replication factor (1 для single-node)
+  replication_factor: 1
+  
+  # Ring - механизм обнаружения инстансов
+  ring:
+    # Адрес этого инстанса
+    instance_addr: 127.0.0.1
+    # Хранилище для ring state
+    kvstore:
+      # inmemory - для single-node
+      # consul/etcd - для кластера
+      store: inmemory
+
+# ========================================
+# SCHEMA - конфигурация хранения индексов
+# ========================================
+schema_config:
+  configs:
+    - from: 2020-10-24
+      # Тип хранилища индексов
+      # boltdb-shipper - файловый индекс + периодическая выгрузка
+      store: boltdb-shipper
+      
+      # Где хранить сами логи (chunks)
+      object_store: filesystem
+      
+      # Версия схемы
+      schema: v11
+      
+      # Настройки индекса
+      index:
+        # Префикс таблиц индекса
+        prefix: index_
+        # Период ротации (создаётся новая таблица каждые 24h)
+        period: 24h
+
+# ========================================
+# LIMITS - лимиты и retention
+# ========================================
+limits_config:
+  # Сколько хранить логи (в часах)
+  # retention_days * 24 часа
+  retention_period: {{ loki_retention_days * 24 }}h
+  
+  # Отклонять логи старше retention_period
+  reject_old_samples: true
+  reject_old_samples_max_age: {{ loki_retention_days * 24 }}h
+  
+  # Лимиты на приём логов
+  # Защита от перегрузки при всплеске логов
+  ingestion_rate_mb: {{ loki_ingestion_rate_mb }}
+  ingestion_burst_size_mb: {{ loki_ingestion_burst_size_mb }}
+  
+  # Макс количество серий (уникальных комбинаций labels)
+  max_streams_per_user: 10000
+  
+  # Макс размер запроса
+  max_query_length: 721h
+
+# ========================================
+# TABLE MANAGER - управление таблицами
+# ========================================
+table_manager:
+  # Включить удаление старых данных
+  retention_deletes_enabled: true
+  # Период retention
+  retention_period: {{ loki_retention_days * 24 }}h
+
+# ========================================
+# COMPACTOR - сжатие и очистка данных
+# ========================================
+compactor:
+  # Рабочая директория для compactor
+  working_directory: {{ loki_data_path }}/compactor
+  
+  # Хранилище для compacted данных
+  shared_store: filesystem
+  
+  # Как часто запускать compaction
+  compaction_interval: 10m
+  
+  # Включить удаление данных по retention
+  retention_enabled: true
+  
+  # Задержка перед удалением (защита от случайного удаления)
+  retention_delete_delay: 2h
+  
+  # Количество worker'ов для удаления
+  retention_delete_worker_count: 150
