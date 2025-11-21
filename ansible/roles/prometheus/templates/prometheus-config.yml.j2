@@ -1,0 +1,22 @@
+# --- roles/prometheus/templates/prometheus-config.yml.j2 ---
+# ========================================
+# PROMETHEUS CONFIGURATION
+# ========================================
+# Основной конфиг Prometheus:
+# - Глобальные настройки
+# - Alertmanager подключение
+# - Scrape configs (откуда собирать метрики)
+# ========================================
+
+global:
+  # Как часто собирать метрики со всех targets
+  # 15s - хороший баланс между точностью и нагрузкой
+  scrape_interval: {{ prometheus_scrape_interval }}
+  
+  # Как часто вычислять recording rules и alert rules
+  evaluation_interval: {{ prometheus_evaluation_interval }}
+  
+  # Метки добавляемые ко всем метрикам и алертам
+  external_labels:
+    # Идентификатор этого Prometheus (полезно при federation)
+    monitor: 'prometheus-server'
