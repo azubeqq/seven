@@ -1,0 +1,46 @@
+# --- roles/grafana/templates/datasources-grafana.yml.j2 ---
+# ========================================
+# GRAFANA DATASOURCES PROVISIONING
+# ========================================
+# Автоматическая настройка источников данных
+# Grafana читает этот файл при старте
+# ========================================
+
+apiVersion: 1
+
+# Удалять datasources которых нет в этом файле?
+# false = оставляем добавленные вручную через UI
+deleteDatasources: []
+
+# Список datasources
+datasources:
+{% for ds in grafana_datasources %}
+  # ----------------------------------------
+  # {{ ds.name }}
+  # ----------------------------------------
+  - name: "{{ ds.name }}"
+    # Тип datasource (prometheus, loki, mysql, etc.)
+    type: "{{ ds.type }}"
+    
+    # Метод доступа:
+    # proxy = Grafana backend обращается к datasource
+    # direct = браузер напрямую (не рекомендуется)
+    access: proxy
+    
+    # URL datasource (внутри Docker сети)
+    url: "{{ ds.url }}"
+    
+    # Datasource по умолчанию для запросов?
+    isDefault: {{ ds.is_default | lower }}
+    
+    # Можно ли редактировать через UI?
+    editable: true
+    
+{% if ds.type == 'loki' %}
+    # Специфичные настройки для Loki
+    jsonData:
+      # Максимальное количество строк в ответе
+      maxLines: 1000
+{% endif %}
+
+{% endfor %}
