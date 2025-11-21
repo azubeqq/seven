@@ -1,0 +1,30 @@
+# --- roles/docker/templates/daemon.json.j2 ---
+{
+{% if docker_metrics_enabled %}
+  "metrics-addr": "0.0.0.0:{{ docker_metrics_port }}",
+  "experimental": true,
+{% endif %}
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  },
+  "storage-driver": "overlay2"
+}
+{# 
+  Описание настроек:
+  
+  metrics-addr: Включает endpoint для метрик Docker Engine
+                Prometheus сможет скрапить :9323/metrics
+  
+  experimental: Нужен для metrics (пока experimental feature)
+  
+  log-driver: json-file - стандартный драйвер логов Docker
+              Promtail будет читать эти логи
+  
+  log-opts:
+    max-size: Максимальный размер одного лог-файла
+    max-file: Количество ротируемых файлов (3 x 10MB = 30MB max)
+  
+  storage-driver: overlay2 - современный и эффективный драйвер хранения
+#}
