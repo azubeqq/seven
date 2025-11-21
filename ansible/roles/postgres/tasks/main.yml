@@ -1,0 +1,41 @@
+# --- roles/postgres/tasks/main.yml ---
+---
+
+# Директория для docker-compose.yml
+- name: Create PostgreSQL directory
+  ansible.builtin.file:
+    path: "{{ postgres_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+
+# Создаём docker-compose из шаблона
+- name: Template PostgreSQL docker-compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ postgres_dir }}/docker-compose.yml"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+
+# Используем новый модуль community.docker.docker_compose_v2
+# Он лучше работает с современным Docker Compose v2
+- name: Start PostgreSQL container
+  community.docker.docker_compose_v2:
+    project_src: "{{ postgres_dir }}"
+    state: present
+    wait: true           # Ждать пока контейнер запустится
+    wait_timeout: 60     # Таймаут ожидания (секунды)
+  register: postgres_result
+
+# Ждём пока PostgreSQL реально готов принимать подключения
+- name: Wait for PostgreSQL to be ready
+  ansible.builtin.command:
+    cmd: docker exec {{ postgres_container_name }} pg_isready -U {{ postgres_db_user }}
+  register: pg_ready
+  until: pg_ready.rc == 0
+  retries: 10
+  delay: 5
+  changed_when: false
+  # pg_isready возвращает 0 когда БД готова
