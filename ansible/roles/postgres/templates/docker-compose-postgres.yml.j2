@@ -1,0 +1,60 @@
+# --- roles/postgres/templates/docker-compose-postgres.yml.j2 ---
+# ========================================
+# POSTGRESQL DOCKER COMPOSE
+# ========================================
+# Запускает PostgreSQL в контейнере
+# Данные сохраняются в named volume
+
+version: '3.8'
+
+services:
+  {{ postgres_container_name }}:
+    # Образ PostgreSQL Alpine (компактный)
+    image: "{{ postgres_image }}"
+    
+    # Имя контейнера для обращения из других сервисов
+    container_name: "{{ postgres_container_name }}"
+    
+    # Переменные окружения для инициализации БД
+    environment:
+      # Имя базы данных (создаётся автоматически)
+      POSTGRES_DB: "{{ postgres_db_name }}"
+      # Пользователь БД
+      POSTGRES_USER: "{{ postgres_db_user }}"
+      # Пароль (из group_vars)
+      POSTGRES_PASSWORD: "{{ db_password }}"
+    
+    # Проброс порта (host:container)
+    ports:
+      - "{{ postgres_port }}:5432"
+    
+    # Persistent storage для данных БД
+    # Named volume сохраняет данные при пересоздании контейнера
+    volumes:
+      - {{ postgres_volume_name }}:/var/lib/postgresql/data
+    
+    # Docker сеть для коммуникации с другими сервисами
+    networks:
+      - {{ docker_network_name }}
+    
+    # Политика перезапуска
+    # unless-stopped: перезапускать всегда, кроме ручной остановки
+    restart: unless-stopped
+    
+    # Healthcheck - проверка что PostgreSQL работает
+    healthcheck:
+      # pg_isready - встроенная утилита PostgreSQL
+      test: ["CMD-SHELL", "pg_isready -U {{ postgres_db_user }}"]
+      interval: {{ postgres_healthcheck_interval }}
+      timeout: {{ postgres_healthcheck_timeout }}
+      retries: {{ postgres_healthcheck_retries }}
+
+# Named volumes (создаются автоматически)
+volumes:
+  {{ postgres_volume_name }}:
+    driver: local
+
+# Внешняя сеть (создана в playbook pre_tasks)
+networks:
+  {{ docker_network_name }}:
+    external: true
