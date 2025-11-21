@@ -1,0 +1,149 @@
+# --- roles/prometheus/templates/alerts.yml.j2 ---
+# ========================================
+# PROMETHEUS ALERT RULES
+# ========================================
+# Правила для генерации алертов
+# Алерты отправляются в Alertmanager
+# ========================================
+
+groups:
+  # ========================================
+  # ИНФРАСТРУКТУРА - базовые проверки
+  # ========================================
+  - name: infrastructure_alerts
+    # Как часто проверять эти правила
+    interval: 30s
+    
+    rules:
+      # ----------------------------------------
+      # Сервис недоступен
+      # ----------------------------------------
+      - alert: ServiceDown
+        # up == 0 означает что target не отвечает
+        expr: up == 0
+        # Ждём 2 минуты перед алертом (избегаем ложных срабатываний)
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ '{{' }} $labels.job {{ '}}' }} is down"
+          description: "Target {{ '{{' }} $labels.instance {{ '}}' }} has been down for more than 2 minutes."
+
+      # ----------------------------------------
+      # Высокая загрузка CPU хоста
+      # ----------------------------------------
+      - alert: HighCPUUsage
+        # Вычисляем % CPU usage (100% - idle%)
+        # irate - мгновенная скорость изменения
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ '{{' }} $labels.instance {{ '}}' }}"
+          description: "CPU usage is above 80% for 5 minutes. Current value: {{ '{{' }} $value | printf \"%.1f\" {{ '}}' }}%"
+
+      # ----------------------------------------
+      # Критическая загрузка CPU
+      # ----------------------------------------
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU usage on {{ '{{' }} $labels.instance {{ '}}' }}"
+          description: "CPU usage is above 95%. Current value: {{ '{{' }} $value | printf \"%.1f\" {{ '}}' }}%"
+
+      # ----------------------------------------
+      # Мало свободной памяти
+      # ----------------------------------------
+      - alert: HighMemoryUsage
+        # Вычисляем % использованной памяти
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ '{{' }} $labels.instance {{ '}}' }}"
+          description: "Memory usage is above 85%. Current value: {{ '{{' }} $value | printf \"%.1f\" {{ '}}' }}%"
+
+      # ----------------------------------------
+      # Мало места на диске
+      # ----------------------------------------
+      - alert: LowDiskSpace
+        # Свободное место на корневом разделе < 20%
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ '{{' }} $labels.instance {{ '}}' }}"
+          description: "Root filesystem has only {{ '{{' }} $value | printf \"%.1f\" {{ '}}' }}% free space."
+
+  # ========================================
+  # ПРИЛОЖЕНИЕ - метрики Flask
+  # ========================================
+  - name: application_alerts
+    interval: 30s
+    
+    rules:
+      # ----------------------------------------
+      # Flask отвечает медленно
+      # ----------------------------------------
+      - alert: SlowFlaskResponse
+        # 95-й перцентиль времени ответа > 2 секунд
+        expr: histogram_quantile(0.95, rate(flask_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Flask application is responding slowly"
+          description: "95th percentile response time is {{ '{{' }} $value | printf \"%.2f\" {{ '}}' }}s"
+
+      # ----------------------------------------
+      # Много HTTP 5xx ошибок
+      # ----------------------------------------
+      - alert: HighErrorRate
+        # Более 5% запросов возвращают 5xx
+        expr: |
+          sum(rate(flask_http_request_total{status=~"5.."}[5m])) /
+          sum(rate(flask_http_request_total[5m])) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate in Flask application"
+          description: "Error rate is {{ '{{' }} $value | printf \"%.1f\" {{ '}}' }}%"
+
+  # ========================================
+  # БАЗА ДАННЫХ - метрики PostgreSQL
+  # ========================================
+  - name: database_alerts
+    interval: 30s
+    
+    rules:
+      # ----------------------------------------
+      # PostgreSQL недоступен
+      # ----------------------------------------
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL exporter cannot connect to database."
+
+      # ----------------------------------------
+      # Слишком много подключений
+      # ----------------------------------------
+      - alert: PostgresTooManyConnections
+        # Более 80% от max_connections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL has too many connections"
+          description: "PostgreSQL connections: {{ '{{' }} $value | printf \"%.0f\" {{ '}}' }}% of max"
