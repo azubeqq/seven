@@ -1,0 +1,94 @@
+# ========================================
+# ФАЙЛ: playbooks/deploy.yml
+# ========================================
+# Основной playbook - деплоит весь стек
+# ========================================
+---
+- name: Deploy Full Monitoring Stack
+  hosts: aws
+  become: true  # Выполнять с sudo
+  
+  # Порядок ролей ВАЖЕН!
+  # 1. common - базовая настройка системы
+  # 2. docker - установка Docker (нужен всем)
+  # 3. postgres - БД должна быть готова ДО flask
+  # 4. flask_app - приложение (зависит от postgres)
+  # 5. exporters - собирают метрики
+  # 6. prometheus - собирает метрики с exporters
+  # 7. grafana - визуализация (зависит от prometheus)
+  # 8. alertmanager - алерты от prometheus
+  # 9. loki - хранилище логов
+  # 10. promtail - отправляет логи в loki
+  
+  pre_tasks:
+    # Создаём Docker сеть ДО запуска ролей
+    # Все контейнеры будут в этой сети
+    - name: Ensure Docker network exists
+      community.docker.docker_network:
+        name: "{{ docker_network_name }}"
+        state: present
+      tags: always
+  
+  roles:
+    - role: common
+      tags: [common, setup]
+    
+    - role: docker
+      tags: [docker, setup]
+    
+    - role: postgres
+      tags: [postgres, database, app]
+    
+    - role: flask_app
+      tags: [flask, app]
+    
+    - role: node_exporter
+      tags: [node_exporter, exporters, monitoring]
+    
+    - role: postgres_exporter
+      tags: [postgres_exporter, exporters, monitoring]
+    
+    - role: prometheus
+      tags: [prometheus, monitoring]
+    
+    - role: grafana
+      tags: [grafana, monitoring]
+    
+    - role: alertmanager
+      tags: [alertmanager, monitoring]
+    
+    - role: loki
+      tags: [loki, logging]
+    
+    - role: promtail
+      tags: [promtail, logging]
+  
+  post_tasks:
+    # Финальная проверка
+    - name: Wait for services to start
+      ansible.builtin.pause:
+        seconds: 15
+        prompt: "Waiting for containers to initialize..."
+    
+    - name: Show running containers
+      ansible.builtin.command:
+        cmd: docker ps --format "table {{ '{{' }}.Names{{ '}}' }}\t{{ '{{' }}.Status{{ '}}' }}\t{{ '{{' }}.Ports{{ '}}' }}"
+      register: docker_status
+      changed_when: false
+    
+    - name: Display container status
+      ansible.builtin.debug:
+        msg: "{{ docker_status.stdout_lines }}"
+    
+    - name: Show access URLs
+      ansible.builtin.debug:
+        msg:
+          - "========================================="
+          - "✅ Deployment Complete!"
+          - "========================================="
+          - "Flask App:    http://{{ ansible_host }}:{{ flask_port }}"
+          - "Prometheus:   http://{{ ansible_host }}:{{ prometheus_port }}"
+          - "Grafana:      http://{{ ansible_host }}:{{ grafana_port }}"
+          - "Alertmanager: http://{{ ansible_host }}:{{ alertmanager_port }}"
+          - "Loki:         http://{{ ansible_host }}:{{ loki_port }}"
+          - "========================================="
