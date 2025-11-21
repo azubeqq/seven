@@ -1,12 +1,34 @@
+# ========================================
+# РОЛЬ: loki
+# Хранилище логов (аналог Prometheus для логов)
+# ========================================
+
+# --- roles/loki/defaults/main.yml ---
 ---
-loki_name: "loki"
+# Директория для Loki
+loki_dir: "{{ base_dir }}/loki"
 
-loki_base_dir: "/opt/{{ loki_name }}"
-loki_compose_file: "{{ loki_base_dir }}/docker-compose.yml"
-loki_config_path: "{{ loki_base_dir }}/loki-config.yml"
+# Docker образ
+loki_image: "grafana/loki:2.9.0"
 
-loki_image: "grafana/loki:latest"
+# Имя контейнера
+loki_container_name: "loki"
 
+# Порт HTTP API
 loki_port: 3100
 
-loki_storage_dir: "/var/loki"
+# gRPC порт (для внутренней коммуникации)
+loki_grpc_port: 9096
+
+# Volume для хранения данных
+loki_volume_name: "loki_data"
+
+# Настройки хранения
+loki_retention_days: 7              # Хранить логи N дней
+loki_ingestion_rate_mb: 10          # Макс скорость приёма MB/s
+loki_ingestion_burst_size_mb: 20    # Burst лимит MB
+
+# Директории внутри контейнера
+loki_data_path: "/loki"
+loki_chunks_dir: "/loki/chunks"
+loki_rules_dir: "/loki/rules"
