@@ -1,0 +1,37 @@
+# --- roles/promtail/tasks/main.yml ---
+---
+- name: Create Promtail directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+  loop:
+    - "{{ promtail_dir }}"
+    - "{{ promtail_positions_dir }}"
+  # positions директория должна быть writeable
+
+- name: Template Promtail configuration
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: "{{ promtail_dir }}/promtail-config.yml"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+
+- name: Template Promtail docker-compose
+  ansible.builtin.template:
+    src: docker-compose-promtail.yml.j2
+    dest: "{{ promtail_dir }}/docker-compose-promtail.yml"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+
+- name: Start Promtail container
+  community.docker.docker_compose_v2:
+    project_src: "{{ promtail_dir }}"
+    state: present
+    wait: true
+    wait_timeout: 60
+  register: promtail_result
