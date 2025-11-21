@@ -35,8 +35,8 @@
 
 - name: Template Flask docker-compose
   ansible.builtin.template:
-    src: docker-compose.yml.j2
-    dest: "{{ flask_dir }}/docker-compose.yml"
+    src: docker-compose-flask.yml.j2
+    dest: "{{ flask_dir }}/docker-compose-flask.yml"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0644'
