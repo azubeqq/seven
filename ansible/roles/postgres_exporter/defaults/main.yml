@@ -1,16 +1,30 @@
+# ========================================
+# РОЛЬ: postgres_exporter
+# Экспортер метрик PostgreSQL
+# ========================================
+
+# --- roles/postgres_exporter/defaults/main.yml ---
 ---
-postgres_exporter_name: "postgres_exporter"
+# Директория для конфигурации
+postgres_exporter_dir: "{{ base_dir }}/postgres_exporter"
 
-postgres_exporter_base_dir: "/opt/{{ postgres_exporter_name }}"
-postgres_exporter_compose_file: "{{ postgres_exporter_base_dir }}/docker-compose.yml"
+# Docker образ
+postgres_exporter_image: "prometheuscommunity/postgres-exporter:v0.15.0"
 
-postgres_exporter_image: "prom/postgres-exporter:latest"
+# Имя контейнера
+postgres_exporter_container_name: "postgres_exporter"
 
+# Порт для метрик
 postgres_exporter_port: 9187
 
-postgres_exporter_data_source:
-  host: "127.0.0.1"
-  port: 5432
-  user: "app"
-  password: "password123"
-  dbname: "appdb"
+# Подключение к PostgreSQL
+# Используем переменные из роли postgres
+postgres_exporter_db_host: "{{ postgres_container_name }}"
+postgres_exporter_db_port: "{{ postgres_port }}"
+postgres_exporter_db_name: "{{ postgres_db_name }}"
+postgres_exporter_db_user: "{{ postgres_db_user }}"
+# Пароль из group_vars (db_password)
+
+# Какие метрики собирать
+# По умолчанию собирает базовые метрики
+postgres_exporter_auto_discover_databases: "true"
