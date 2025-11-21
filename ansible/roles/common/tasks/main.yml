@@ -1,12 +1,30 @@
+# --- roles/common/tasks/main.yml ---
 ---
-# /ansible/roles/common/tasks/main.yml
+# Задачи базовой настройки сервера
 
-common_packages:
-  - curl
-  - vim
-  - htop
-  - git
-  - net-tools
-  - wget
+# Обновляем все пакеты до последних версий
+- name: Update system packages
+  ansible.builtin.yum:
+    name: "*"
+    state: latest
+    update_cache: true
 
-timezone: "UTC"
+# Устанавливаем базовые утилиты
+- name: Install common packages
+  ansible.builtin.yum:
+    name: "{{ common_packages }}"
+    state: present
+
+# Устанавливаем timezone (важно для логов)
+- name: Set timezone
+  ansible.builtin.timezone:
+    name: "{{ common_timezone }}"
+
+# Создаём базовую директорию для всех сервисов
+- name: Ensure base directory exists
+  ansible.builtin.file:
+    path: "{{ base_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
