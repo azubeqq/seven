@@ -1,0 +1,8 @@
+# --- roles/docker/handlers/main.yml ---
+---
+
+# Перезапуск Docker при изменении конфига
+- name: Restart Docker
+  ansible.builtin.systemd:
+    name: docker
+    state: restarted
