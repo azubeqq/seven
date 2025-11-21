@@ -1,24 +1,51 @@
+# --- roles/flask_app/tasks/main.yml ---
 ---
-- name: Create Flask app directory
+# Создаём директории для приложения
+- name: Create Flask directories
   ansible.builtin.file:
-    path: "{{ app_dir }}/flask"
+    path: "{{ item }}"
     state: directory
     owner: "{{ app_user }}"
+    group: "{{ app_user }}"
     mode: '0755'
+  loop:
+    - "{{ flask_dir }}"
+    - "{{ flask_dir }}/app"
 
+# Копируем файлы приложения из roles/flask_app/files/
 - name: Copy Flask application files
   ansible.builtin.copy:
-    src: app/
-    dest: "{{ app_dir }}/flask/app/"
+    src: "{{ item }}"
+    dest: "{{ flask_dir }}/app/"
     owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+  loop:
+    - app.py
+    - requirements.txt
+
+# Dockerfile для сборки образа
+- name: Copy Dockerfile
+  ansible.builtin.copy:
+    src: Dockerfile
+    dest: "{{ flask_dir }}/app/Dockerfile"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
 
 - name: Template Flask docker-compose
   ansible.builtin.template:
-    src: docker-compose-flask.yml.j2
-    dest: "{{ app_dir }}/flask/docker-compose.yml"
+    src: docker-compose.yml.j2
+    dest: "{{ flask_dir }}/docker-compose.yml"
     owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
 
-- name: Start Flask container
+- name: Build and start Flask container
   community.docker.docker_compose_v2:
-    project_src: "{{ app_dir }}/flask"
+    project_src: "{{ flask_dir }}"
     state: present
+    build: always    # Всегда пересобирать образ
+    wait: true
+    wait_timeout: 120
+  register: flask_result
