@@ -1,9 +1,22 @@
+# ========================================
+# РОЛЬ: docker
+# Установка Docker и Docker Compose
+# ========================================
+
+# --- roles/docker/defaults/main.yml ---
 ---
-docker_version: "{{ docker_version }}"   #latest
+# Версия Docker Compose (standalone binary)
+docker_compose_version: "v2.24.6"
 
-docker_packages:
-  - docker.io
+# URL для скачивания Docker Compose
+docker_compose_url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-linux-x86_64"
 
-docker_compose_version: "{{ docker_compose_version }}" #v2.29.1"
+# Путь установки Docker Compose
+docker_compose_path: /usr/local/bin/docker-compose
 
-docker_daemon_config: {}
+# Включить Docker metrics endpoint для мониторинга
+docker_metrics_enabled: true
+docker_metrics_port: 9323
+
+# Путь к конфигу Docker daemon
+docker_daemon_config_path: /etc/docker/daemon.json
