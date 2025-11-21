@@ -1,0 +1,8 @@
+# --- roles/alertmanager/handlers/main.yml ---
+---
+- name: Reload Alertmanager
+  ansible.builtin.uri:
+    url: "http://localhost:{{ alertmanager_port }}/-/reload"
+    method: POST
+    status_code: 200
+  # Hot reload конфига
