@@ -1,25 +1,50 @@
+# --- roles/flask_app/templates/docker-compose-flask.yml.j2 ---
+# ========================================
+# FLASK APPLICATION DOCKER COMPOSE
+# ========================================
 version: '3.8'
 
 services:
-  {{ flask_app_name }}:
-    build: ./app
-    image: {{ flask_app_image }}
-    container_name: {{ flask_app_name }}
-    ports:
-      - "{{ flask_app_port }}:5000"
+  {{ flask_container_name }}:
+    # Собираем образ из локального Dockerfile
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    
+    # Тег для собранного образа
+    image: "{{ flask_image }}"
+    
+    container_name: "{{ flask_container_name }}"
+    
+    # Переменные окружения для подключения к БД
     environment:
-      - DATABASE_HOST={{ flask_db_host }}
-      - DATABASE_PORT={{ flask_db_port }}
-      - DATABASE_NAME={{ flask_db_name }}
-      - DATABASE_USER={{ flask_db_user }}
-      - DATABASE_PASSWORD={{ flask_db_password }}
+      # Хост БД - имя контейнера PostgreSQL
+      DATABASE_HOST: "{{ flask_db_host }}"
+      DATABASE_PORT: "{{ flask_db_port }}"
+      DATABASE_NAME: "{{ flask_db_name }}"
+      DATABASE_USER: "{{ flask_db_user }}"
+      DATABASE_PASSWORD: "{{ db_password }}"
+    
+    ports:
+      - "{{ flask_port }}:5000"
+    
     networks:
-      - {{ flask_network }}
+      - {{ docker_network_name }}
+    
     restart: unless-stopped
-    deploy:
-      replicas: {{ flask_app_replicas }}
+    
+    # Healthcheck - проверка что приложение отвечает
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: {{ flask_healthcheck_interval }}
+      timeout: {{ flask_healthcheck_timeout }}
+      retries: {{ flask_healthcheck_retries }}
+      start_period: {{ flask_healthcheck_start_period }}
+    
+    # НЕ используем depends_on!
+    # Порядок запуска контролируется через Ansible роли
+    # PostgreSQL запускается первым в playbook
 
 networks:
-  {{ flask_network }}:
+  {{ docker_network_name }}:
     external: true
-    name: {{ flask_network }}
