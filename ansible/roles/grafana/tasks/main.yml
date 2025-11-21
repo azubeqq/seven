@@ -1,0 +1,50 @@
+# --- roles/grafana/tasks/main.yml ---
+---
+- name: Create Grafana directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+  loop:
+    - "{{ grafana_dir }}"
+    - "{{ grafana_dir }}/provisioning"
+    - "{{ grafana_dir }}/provisioning/datasources"
+    - "{{ grafana_dir }}/provisioning/dashboards"
+  # Создаём структуру для provisioning
+  # Grafana автоматически подхватит конфиги из этих папок
+
+- name: Template datasources configuration
+  ansible.builtin.template:
+    src: datasources-grafana.yml.j2
+    dest: "{{ grafana_dir }}/provisioning/datasources/datasources-grafana.yml"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+  # Автоматическое подключение data sources
+
+- name: Template Grafana docker-compose
+  ansible.builtin.template:
+    src: docker-compose-grafana.yml.j2
+    dest: "{{ grafana_dir }}/docker-compose-grafana.yml"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+
+- name: Start Grafana container
+  community.docker.docker_compose_v2:
+    project_src: "{{ grafana_dir }}"
+    state: present
+    wait: true
+    wait_timeout: 60
+  register: grafana_result
+
+- name: Wait for Grafana to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ grafana_port }}/api/health"
+    status_code: 200
+  register: grafana_ready
+  until: grafana_ready.status == 200
+  retries: 12
+  delay: 5
