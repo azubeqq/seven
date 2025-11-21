@@ -20,3 +20,13 @@ global:
   external_labels:
     # Идентификатор этого Prometheus (полезно при federation)
     monitor: 'prometheus-server'
+
+# ========================================
+# ALERTMANAGER CONNECTION
+# ========================================
+alerting:
+  alertmanagers:
+    - static_configs:
+        # Адрес Alertmanager
+        # Используем имя контейнера как hostname
+        - targets: ['{{ alertmanager_container_name }}:9093']
