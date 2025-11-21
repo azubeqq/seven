@@ -1,4 +1,4 @@
-# --- roles/prometheus/templates/prometheus-config.yml.j2 ---
+# --- roles/prometheus/templates/prometheus.yml.j2 ---
 # ========================================
 # PROMETHEUS CONFIGURATION
 # ========================================
@@ -30,3 +30,75 @@ alerting:
         # Адрес Alertmanager
         # Используем имя контейнера как hostname
         - targets: ['{{ alertmanager_container_name }}:9093']
+
+# ========================================
+# ALERT RULES FILES
+# ========================================
+# Пути к файлам с правилами алертов
+rule_files:
+  - '/etc/prometheus/alerts/*.yml'
+
+# ========================================
+# SCRAPE CONFIGURATIONS
+# ========================================
+# Определяем откуда и как собирать метрики
+scrape_configs:
+
+{% for target in prometheus_static_targets %}
+  # ----------------------------------------
+  # Job: {{ target.job_name }}
+  # ----------------------------------------
+  - job_name: '{{ target.job_name }}'
+    
+{% if target.metrics_path is defined %}
+    # Путь к метрикам (если отличается от /metrics)
+    metrics_path: '{{ target.metrics_path }}'
+{% endif %}
+    
+    static_configs:
+      - targets: {{ target.targets | to_json }}
+{% if target.labels is defined %}
+        labels:
+{% for key, value in target.labels.items() %}
+          {{ key }}: '{{ value }}'
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+
+{% if prometheus_docker_sd_enabled %}
+  # ----------------------------------------
+  # Docker Service Discovery
+  # ----------------------------------------
+  # Автоматически находит все контейнеры
+  # и собирает метрики с тех, кто их экспортирует
+  - job_name: 'docker-containers'
+    docker_sd_configs:
+      # Подключение к Docker daemon через socket
+      - host: unix:///var/run/docker.sock
+        # Как часто обновлять список контейнеров
+        refresh_interval: 30s
+    
+    # Relabeling - преобразование меток
+    relabel_configs:
+      # Извлекаем имя контейнера из Docker метаданных
+      - source_labels: ['__meta_docker_container_name']
+        # Убираем "/" в начале имени
+        regex: '/(.*)'
+        target_label: 'container_name'
+        replacement: '$1'
+      
+      # Добавляем label с именем Docker image
+      - source_labels: ['__meta_docker_container_image']
+        target_label: 'container_image'
+      
+      # Добавляем label со статусом контейнера
+      - source_labels: ['__meta_docker_container_status']
+        target_label: 'container_status'
+      
+      # Если контейнер имеет label "prometheus.scrape=true"
+      # то скрапим его метрики
+      - source_labels: ['__meta_docker_container_label_prometheus_scrape']
+        regex: 'true'
+        action: keep
+{% endif %}
