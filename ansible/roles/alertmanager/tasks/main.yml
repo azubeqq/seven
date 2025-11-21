@@ -1,0 +1,34 @@
+# --- roles/alertmanager/tasks/main.yml ---
+---
+- name: Create Alertmanager directory
+  ansible.builtin.file:
+    path: "{{ alertmanager_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+
+- name: Template Alertmanager configuration
+  ansible.builtin.template:
+    src: alertmanager-config.yml.j2
+    dest: "{{ alertmanager_dir }}/alertmanager-config.yml"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+  notify: Reload Alertmanager
+
+- name: Template Alertmanager docker-compose
+  ansible.builtin.template:
+    src: docker-compose-alertmanager.yml.j2
+    dest: "{{ alertmanager_dir }}/docker-compose-alertmanager.yml"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+
+- name: Start Alertmanager container
+  community.docker.docker_compose_v2:
+    project_src: "{{ alertmanager_dir }}"
+    state: present
+    wait: true
+    wait_timeout: 60
+  register: alertmanager_result
