@@ -1,0 +1,25 @@
+# --- roles/node_exporter/tasks/main.yml ---
+---
+- name: Create Node Exporter directory
+  ansible.builtin.file:
+    path: "{{ node_exporter_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+
+- name: Template Node Exporter docker-compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ node_exporter_dir }}/docker-compose.yml"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+
+- name: Start Node Exporter container
+  community.docker.docker_compose_v2:
+    project_src: "{{ node_exporter_dir }}"
+    state: present
+    wait: true
+    wait_timeout: 60
+  register: node_exporter_result
