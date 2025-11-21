@@ -1,17 +1,44 @@
+# --- roles/alertmanager/defaults/main.yml ---
+# ========================================
+# РОЛЬ: alertmanager
+# Управление алертами от Prometheus
+# ========================================
+
 ---
-alertmanager_name: "alertmanager"
+# Директория для Alertmanager
+alertmanager_dir: "{{ base_dir }}/alertmanager"
 
-alertmanager_base_dir: "/opt/{{ alertmanager_name }}"
-alertmanager_compose_file: "{{ alertmanager_base_dir }}/docker-compose.yml"
+# Docker образ
+alertmanager_image: "prom/alertmanager:v0.26.0"
 
-alertmanager_image: "prom/alertmanager:latest"
+# Имя контейнера
+alertmanager_container_name: "alertmanager"
 
+# Порт веб-интерфейса
 alertmanager_port: 9093
 
-alertmanager_config:
-  global:
-    resolve_timeout: 5m
-  route:
-    receiver: 'default'
-  receivers:
-    - name: 'default'
+# Volume для данных (silences, state)
+alertmanager_volume_name: "alertmanager_data"
+
+# Таймаут для resolve алертов
+alertmanager_resolve_timeout: "5m"
+
+# Настройки группировки алертов
+alertmanager_group_wait: "30s"      # Ждать перед отправкой группы
+alertmanager_group_interval: "5m"   # Интервал отправки новых в группе
+alertmanager_repeat_interval: "4h"  # Повторять активные алерты
+
+# Receiver по умолчанию (null = не отправлять)
+# Измени на email/telegram когда настроишь
+alertmanager_default_receiver: "null"
+
+# Email настройки (раскомментируй и заполни для использования)
+# alertmanager_smtp_host: "smtp.gmail.com:587"
+# alertmanager_smtp_from: "alerts@example.com"
+# alertmanager_smtp_user: "alerts@example.com"
+# alertmanager_smtp_password: "app_password_here"
+# alertmanager_email_to: "admin@example.com"
+
+# Telegram настройки (раскомментируй для использования)
+# alertmanager_telegram_bot_token: "your_bot_token"
+# alertmanager_telegram_chat_id: "your_chat_id"
