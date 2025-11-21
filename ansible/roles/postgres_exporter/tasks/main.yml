@@ -10,8 +10,8 @@
 
 - name: Template Postgres Exporter docker-compose
   ansible.builtin.template:
-    src: docker-compose.yml.j2
-    dest: "{{ postgres_exporter_dir }}/docker-compose.yml"
+    src: docker-compose-postgres-exporter.yml.j2
+    dest: "{{ postgres_exporter_dir }}/docker-compose-postgres-exporter.yml"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0644'
@@ -23,3 +23,4 @@
     wait: true
     wait_timeout: 60
   register: postgres_exporter_result
+
