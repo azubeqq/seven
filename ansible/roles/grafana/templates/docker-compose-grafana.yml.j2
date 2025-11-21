@@ -1,0 +1,65 @@
+# --- roles/grafana/templates/docker-compose-grafana.yml.j2 ---
+# ========================================
+# GRAFANA DOCKER COMPOSE
+# ========================================
+# Grafana - система визуализации
+# Позволяет:
+# - Создавать дашборды с метриками
+# - Просматривать логи из Loki
+# - Настраивать алерты
+# ========================================
+
+version: '3.8'
+
+services:
+  {{ grafana_container_name }}:
+    image: "{{ grafana_image }}"
+    container_name: "{{ grafana_container_name }}"
+    
+    # Переменные окружения для настройки
+    environment:
+      # Администратор
+      GF_SECURITY_ADMIN_USER: "{{ grafana_admin_user }}"
+      GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_admin_password }}"
+      
+      # Отключить регистрацию новых пользователей
+      GF_USERS_ALLOW_SIGN_UP: "{{ grafana_allow_signup }}"
+      
+      # Отключить анонимный доступ
+      GF_AUTH_ANONYMOUS_ENABLED: "{{ grafana_anonymous_enabled }}"
+      
+      # Путь к provisioning (автонастройка)
+      GF_PATHS_PROVISIONING: "/etc/grafana/provisioning"
+      
+      # Логирование
+      GF_LOG_MODE: "console"
+      GF_LOG_LEVEL: "info"
+    
+    ports:
+      - "{{ grafana_port }}:3000"
+    
+    volumes:
+      # Данные Grafana (дашборды, пользователи, настройки)
+      - {{ grafana_volume_name }}:/var/lib/grafana
+      
+      # Provisioning - автоматическая настройка datasources
+      - ./provisioning:/etc/grafana/provisioning:ro
+    
+    networks:
+      - {{ docker_network_name }}
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  {{ grafana_volume_name }}:
+    driver: local
+
+networks:
+  {{ docker_network_name }}:
+    external: true
