@@ -1,60 +1,25 @@
+# ========================================
+# ФАЙЛ: group_vars/all.yml
+# ========================================
+# Глобальные переменные для ВСЕХ хостов
+# Специфичные для сервисов - в их defaults/main.yml
+# ========================================
 ---
-# ========================================
-# ANSIBLE GROUP VARIABLES
-# ========================================
+# --- Системные переменные ---
+# Пользователь на удалённом сервере
+app_user: ec2-user
 
-# Application
-#app_user: ec2-user
-#app_dir: /home/ec2-user/app
+# Базовая директория для всех сервисов
+base_dir: /home/{{ app_user }}/services
 
-# Ports
-#flask_port: 5000
-#prometheus_port: 9090
-#grafana_port: 3000
-#alertmanager_port: 9093
-#node_exporter_port: 9100
-#cadvisor_port: 8080
-#postgres_exporter_port: 9187
-#loki_port: 3100
-#promtail_port: 9080
+# --- Docker Network ---
+# Общая сеть для всех контейнеров
+# Все сервисы должны быть в одной сети для коммуникации
+docker_network_name: monitoring-network
 
-# Database
-#db_user: appuser
-#db_password: app_password  # В продакшене используй Vault!
-#db_name: appdb
-#db_port: 5432
+# --- Секреты (В ПРОДАКШЕНЕ ИСПОЛЬЗОВАТЬ VAULT!) ---
+# Пароль базы данных
+db_password: "SuperSecretP@ss123"
 
-# Docker
-docker_compose_version: "v2.24.6"
-#docker_compose_binary: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-linux-x86_64"
-
-# Images (точные версии!)
-#flask_image: "myflaskapp:1.0.0"
-#postgres_image: "postgres:14.10-alpine"
-#prometheus_image: "prom/prometheus:v2.48.0"
-#grafana_image: "grafana/grafana:10.2.2"
-#node_exporter_image: "prom/node-exporter:v1.7.0"
-#cadvisor_image: "gcr.io/cadvisor/cadvisor:v0.47.2"
-#alertmanager_image: "prom/alertmanager:v0.26.0"
-#postgresexporter_image: "prometheuscommunity/postgres-exporter:v0.15.0"
-#loki_image: "grafana/loki:2.9.0"
-#promtail_image: "grafana/promtail:2.9.0"
-
-# Network
-#network_name: monitoring-net
-
-# Feature flags
-#enable_loki: true
-#enable_backup: true
-
-# Loki configuration
-#loki_retention_days: 7
-
-# Backup configuration
-#backup_schedule_hour: 16
-#backup_schedule_minute: 50
-#backup_retention_days: 7
-#backup_to_s3: false
-
-# Grafana
-#grafana_admin_password: admin  # ИЗМЕНИ!
+# Пароль Grafana админа
+grafana_admin_password: "admin123"
