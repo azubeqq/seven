@@ -1,0 +1,132 @@
+# --- roles/promtail/templates/promtail-config.yml.j2 ---
+# ========================================
+# PROMTAIL CONFIGURATION
+# ========================================
+# Promtail - агент сбора логов
+# Читает логи из файлов и отправляет в Loki
+# Добавляет метаданные (labels) к логам
+# ========================================
+
+# ========================================
+# SERVER - HTTP сервер для метрик
+# ========================================
+server:
+  http_listen_port: {{ promtail_port }}
+  grpc_listen_port: 0  # Отключить gRPC
+
+# ========================================
+# CLIENTS - куда отправлять логи
+# ========================================
+clients:
+  - url: {{ promtail_loki_url }}
+    # Таймауты
+    timeout: 10s
+    # Batching - собираем логи перед отправкой
+    batchwait: 1s      # Ждать 1 секунду
+    batchsize: 1048576 # Или пока не наберётся 1MB
+    
+    # External labels - добавляются ко ВСЕМ логам
+    external_labels:
+{% for key, value in promtail_external_labels.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+
+# ========================================
+# POSITIONS - отслеживание прочитанных логов
+# ========================================
+positions:
+  # Файл для хранения позиций чтения
+  # Позволяет продолжить с того же места после рестарта
+  filename: /positions/positions.yaml
+  
+  # Как часто сохранять позиции
+  sync_period: 10s
+
+# ========================================
+# SCRAPE CONFIGS - откуда собирать логи
+# ========================================
+scrape_configs:
+
+{% if promtail_scrape_docker %}
+  # ----------------------------------------
+  # Docker контейнеры
+  # ----------------------------------------
+  # Читаем логи из /var/lib/docker/containers
+  - job_name: docker
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          # Label для всех Docker логов
+          job: docker
+          # Путь к лог-файлам (glob pattern)
+          __path__: /var/lib/docker/containers/*/*.log
+    
+    # Pipeline stages - обработка логов
+    pipeline_stages:
+      # Шаг 1: Парсим JSON лог Docker
+      # Docker пишет логи в формате JSON:
+      # {"log":"...", "stream":"stdout", "time":"..."}
+      - json:
+          expressions:
+            # Извлекаем содержимое лога
+            output: log
+            # stdout или stderr
+            stream: stream
+            # Docker атрибуты
+            attrs: attrs
+      
+      # Шаг 2: Извлекаем имя контейнера из attrs
+      - json:
+          expressions:
+            tag: attrs.tag
+          source: attrs
+      
+      # Шаг 3: Парсим имя контейнера из tag
+      # Tag имеет формат: container_name/container_id
+      - regex:
+          expression: '^(?P<container_name>[^/]+)'
+          source: tag
+      
+      # Шаг 4: Добавляем labels
+      - labels:
+          container_name:
+          stream:
+      
+      # Шаг 5: Выводим только содержимое лога
+      - output:
+          source: output
+{% endif %}
+
+{% if promtail_scrape_system %}
+  # ----------------------------------------
+  # Системные логи
+  # ----------------------------------------
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: system
+          __path__: /var/log/*.log
+    
+    pipeline_stages:
+      # Добавляем label с именем файла
+      - regex:
+          expression: '/var/log/(?P<filename>[^/]+)\.log'
+          source: __path__
+      - labels:
+          filename:
+
+  # ----------------------------------------
+  # Syslog / messages
+  # ----------------------------------------
+  - job_name: syslog
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: syslog
+          __path__: /var/log/messages
+{% endif %}
+
