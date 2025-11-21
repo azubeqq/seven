@@ -1,0 +1,47 @@
+# --- roles/postgres_exporter/templates/docker-compose-postgres-exporter.yml.j2 ---
+# ========================================
+# POSTGRES EXPORTER DOCKER COMPOSE
+# ========================================
+# Собирает метрики PostgreSQL:
+# - Количество подключений
+# - Размер базы данных
+# - Transaction rate
+# - Slow queries
+# - Replication lag (если есть реплики)
+# - Lock statistics
+# ========================================
+
+version: '3.8'
+
+services:
+  {{ postgres_exporter_container_name }}:
+    image: "{{ postgres_exporter_image }}"
+    container_name: "{{ postgres_exporter_container_name }}"
+    
+    # Строка подключения к PostgreSQL
+    # Формат: postgresql://user:password@host:port/database?sslmode=disable
+    environment:
+      DATA_SOURCE_NAME: "postgresql://{{ postgres_exporter_db_user }}:{{ db_password }}@{{ postgres_exporter_db_host }}:{{ postgres_exporter_db_port }}/{{ postgres_exporter_db_name }}?sslmode=disable"
+      # sslmode=disable - отключаем SSL для внутренней сети
+      
+      # Автообнаружение всех баз данных в PostgreSQL
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "{{ postgres_exporter_auto_discover_databases }}"
+    
+    ports:
+      - "{{ postgres_exporter_port }}:9187"
+    
+    networks:
+      - {{ docker_network_name }}
+    
+    restart: unless-stopped
+    
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9187/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  {{ docker_network_name }}:
+    external: true
