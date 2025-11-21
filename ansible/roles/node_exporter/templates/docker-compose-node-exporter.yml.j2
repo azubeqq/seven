@@ -1,0 +1,60 @@
+# --- roles/node_exporter/templates/docker-compose-node-exporter.yml.j2 ---
+# ========================================
+# NODE EXPORTER DOCKER COMPOSE
+# ========================================
+# Собирает метрики операционной системы хоста:
+# - CPU usage, load average
+# - Memory usage (RAM, swap)
+# - Disk space, I/O
+# - Network traffic
+# - System uptime
+# ========================================
+
+version: '3.8'
+
+services:
+  {{ node_exporter_container_name }}:
+    image: "{{ node_exporter_image }}"
+    container_name: "{{ node_exporter_container_name }}"
+    
+    ports:
+      - "{{ node_exporter_port }}:9100"
+    
+    # Команда с параметрами
+    command:
+      # Пути к системным директориям хоста
+      # Монтируем их read-only для безопасности
+      - '--path.procfs=/host/proc'   # /proc - информация о процессах
+      - '--path.sysfs=/host/sys'     # /sys - информация о системе
+      - '--path.rootfs=/host'        # Корневая ФС для метрик диска
+      
+      # Исключаем виртуальные файловые системы из метрик диска
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      
+{% for collector in node_exporter_disabled_collectors %}
+      # Отключаем неиспользуемый collector
+      - '--no-collector.{{ collector }}'
+{% endfor %}
+    
+    # Монтируем системные директории хоста
+    # ro = read-only (безопасность)
+    volumes:
+      - /proc:/host/proc:ro    # Информация о процессах
+      - /sys:/host/sys:ro      # Системная информация
+      - /:/host:ro             # Корневая ФС (для метрик диска)
+    
+    networks:
+      - {{ docker_network_name }}
+    
+    restart: unless-stopped
+    
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  {{ docker_network_name }}:
+    external: true
