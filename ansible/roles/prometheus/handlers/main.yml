@@ -1,0 +1,8 @@
+# --- roles/prometheus/handlers/main.yml ---
+---
+# Горячая перезагрузка конфига без рестарта контейнера
+- name: Reload Prometheus
+  ansible.builtin.uri:
+    url: "http://localhost:{{ prometheus_port }}/-/reload"
+    method: POST
+    status_code: 200
