@@ -16,7 +16,7 @@
 - name: Template Prometheus configuration
   ansible.builtin.template:
     src: prometheus.yml.j2
-    dest: "{{ prometheus_dir }}/prometheus-config.yml"
+    dest: "{{ prometheus_dir }}/prometheus.yml"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0644'
@@ -34,8 +34,8 @@
 
 - name: Template Prometheus docker-compose
   ansible.builtin.template:
-    src: docker-compose-prometheus.yml.j2
-    dest: "{{ prometheus_dir }}/docker-compose-prometheus.yml"
+    src: docker-compose.yml.j2
+    dest: "{{ prometheus_dir }}/docker-compose.yml"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0644'
@@ -48,7 +48,8 @@
     wait_timeout: 60
   register: prometheus_result
 
-# Проверяем что Prometheus реально готов- name: Wait for Prometheus to be ready
+# Проверяем что Prometheus реально готов
+- name: Wait for Prometheus to be ready
   ansible.builtin.uri:
     url: "http://localhost:{{ prometheus_port }}/-/ready"
     status_code: 200

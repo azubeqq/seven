@@ -6,7 +6,7 @@
 # --- roles/docker/defaults/main.yml ---
 ---
 # Версия Docker Compose (standalone binary)
-docker_compose_version: "v2.24.6"
+docker_compose_version: "v2.40.2"
 
 # URL для скачивания Docker Compose
 docker_compose_url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-linux-x86_64"
@@ -20,3 +20,12 @@ docker_metrics_port: 9323
 
 # Путь к конфигу Docker daemon
 docker_daemon_config_path: /etc/docker/daemon.json
+
+# 2. Определяем путь к каталогу плагина
+docker_compose_plugin_dir: /usr/local/lib/docker/cli-plugins
+
+# Путь установки Docker Compose V2 Plugin
+docker_compose_plugin_path: /usr/local/lib/docker/cli-plugins/docker-compose
+
+# URL для скачивания Docker Compose V2 Plugin
+docker_compose_url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-linux-{{ ansible_architecture }}"

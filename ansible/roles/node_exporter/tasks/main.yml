@@ -10,8 +10,8 @@
 
 - name: Template Node Exporter docker-compose
   ansible.builtin.template:
-    src: docker-compose-node-exporter.yml.j2
-    dest: "{{ node_exporter_dir }}/docker-compose-node-exporter.yml"
+    src: docker-compose.yml.j2
+    dest: "{{ node_exporter_dir }}/docker-compose.yml"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0644'

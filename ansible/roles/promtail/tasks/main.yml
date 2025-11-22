@@ -14,16 +14,16 @@
 
 - name: Template Promtail configuration
   ansible.builtin.template:
-    src: promtail-config.yml.j2
-    dest: "{{ promtail_dir }}/promtail-config.yml"
+    src: promtail.yml.j2
+    dest: "{{ promtail_dir }}/promtail.yml"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0644'
 
 - name: Template Promtail docker-compose
   ansible.builtin.template:
-    src: docker-compose-promtail.yml.j2
-    dest: "{{ promtail_dir }}/docker-compose-promtail.yml"
+    src: docker-compose.yml.j2
+    dest: "{{ promtail_dir }}/docker-compose.yml"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0644'

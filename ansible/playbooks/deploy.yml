@@ -19,16 +19,7 @@
   # 8. alertmanager - алерты от prometheus
   # 9. loki - хранилище логов
   # 10. promtail - отправляет логи в loki
-  
-  pre_tasks:
-    # Создаём Docker сеть ДО запуска ролей
-    # Все контейнеры будут в этой сети
-    - name: Ensure Docker network exists
-      community.docker.docker_network:
-        name: "{{ docker_network_name }}"
-        state: present
-      tags: always
-  
+ 
   roles:
     - role: common
       tags: [common, setup]

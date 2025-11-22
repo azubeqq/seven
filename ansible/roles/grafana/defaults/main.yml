@@ -24,6 +24,9 @@ grafana_volume_name: "grafana_data"
 grafana_admin_user: "admin"
 # grafana_admin_password берётся из group_vars/all.yml
 
+# Директория для Alertmanager
+alertmanager_dir: "{{ base_dir }}/alertmanager"
+
 # Настройки безопасности
 grafana_allow_signup: "false"  # Запретить регистрацию
 grafana_anonymous_enabled: "false"  # Запретить анонимный доступ

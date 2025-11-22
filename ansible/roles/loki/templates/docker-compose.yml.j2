@@ -2,7 +2,7 @@
 # ========================================
 # LOKI DOCKER COMPOSE
 # ========================================
-version: '3.8'
+#version: '3.8'
 
 services:
   {{ loki_container_name }}:
@@ -11,7 +11,7 @@ services:
     
     # Путь к конфигурационному файлу
     command:
-      - '-config.file=/etc/loki/loki-config.yml'
+      - '-config.file=/etc/loki/loki.yml'
     
     ports:
       # HTTP API (для Grafana, Promtail)
@@ -19,7 +19,7 @@ services:
     
     volumes:
       # Конфиг Loki (read-only)
-      - ./loki-config.yml:/etc/loki/loki-config.yml:ro
+      - ./loki.yml:/etc/loki/loki.yml:ro
       # Данные (chunks, indexes)
       - {{ loki_volume_name }}:/loki
     

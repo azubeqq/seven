@@ -17,8 +17,8 @@
 
 - name: Template datasources configuration
   ansible.builtin.template:
-    src: datasources-grafana.yml.j2
-    dest: "{{ grafana_dir }}/provisioning/datasources/datasources-grafana.yml"
+    src: datasources.yml.j2
+    dest: "{{ grafana_dir }}/provisioning/datasources/datasources.yml"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0644'
@@ -26,8 +26,8 @@
 
 - name: Template Grafana docker-compose
   ansible.builtin.template:
-    src: docker-compose-grafana.yml.j2
-    dest: "{{ grafana_dir }}/docker-compose-grafana.yml"
+    src: docker-compose.yml.j2
+    dest: "{{ grafana_dir }}/docker-compose.yml"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0644'

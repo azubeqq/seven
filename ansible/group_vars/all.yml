@@ -6,11 +6,11 @@
 # ========================================
 ---
 # --- Системные переменные ---
-# Пользователь на удалённом сервере
+# Пользователь на удалённом сервере 
 app_user: ec2-user
 
 # Базовая директория для всех сервисов
-base_dir: /home/{{ app_user }}/services
+base_dir: /home/ec2-user/services
 
 # --- Docker Network ---
 # Общая сеть для всех контейнеров
@@ -22,4 +22,4 @@ docker_network_name: monitoring-network
 db_password: "SuperSecretP@ss123"
 
 # Пароль Grafana админа
-grafana_admin_password: "admin123"
+grafana_admin_password: "admin"

@@ -10,16 +10,16 @@
 
 - name: Template Loki configuration
   ansible.builtin.template:
-    src: loki-config.yml.j2
-    dest: "{{ loki_dir }}/loki-config.yml"
+    src: loki.yml.j2
+    dest: "{{ loki_dir }}/loki.yml"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0644'
 
 - name: Template Loki docker-compose
   ansible.builtin.template:
-    src: docker-compose-loki.yml.j2
-    dest: "{{ loki_dir }}/docker-compose-loki.yml"
+    src: docker-compose.yml.j2
+    dest: "{{ loki_dir }}/docker-compose.yml"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0644'

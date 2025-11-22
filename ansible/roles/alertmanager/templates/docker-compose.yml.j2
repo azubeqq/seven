@@ -2,7 +2,7 @@
 # ========================================
 # ALERTMANAGER DOCKER COMPOSE
 # ========================================
-version: '3.8'
+#version: '3.8'
 
 services:
   {{ alertmanager_container_name }}:
@@ -11,20 +11,18 @@ services:
     
     command:
       # Путь к конфигу
-      - '--config.file=/etc/alertmanager/alertmanager-config.yml'
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
       # Директория для хранения состояния (silences, etc.)
       - '--storage.path=/alertmanager'
       # Уровень логирования
       - '--log.level=info'
-      # Включить hot reload через POST /-/reload
-      - '--web.enable-lifecycle'
     
     ports:
       - "{{ alertmanager_port }}:9093"
     
     volumes:
       # Конфиг (read-only)
-      - ./alertmanager.yml:/etc/alertmanager/alertmanager-config.yml:ro
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       # Данные (silences, state)
       - {{ alertmanager_volume_name }}:/alertmanager
     
