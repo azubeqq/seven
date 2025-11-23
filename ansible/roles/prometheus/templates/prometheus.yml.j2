@@ -1,60 +1,24 @@
-# --- roles/prometheus/templates/prometheus-congig.yml.j2 ---
-# ========================================
-# PROMETHEUS CONFIGURATION
-# ========================================
-# Основной конфиг Prometheus:
-# - Глобальные настройки
-# - Alertmanager подключение
-# - Scrape configs (откуда собирать метрики)
-# ========================================
-
+# --- roles/prometheus/templates/prometheus.yml.j2 ---
 global:
-  # Как часто собирать метрики со всех targets
-  # 15s - хороший баланс между точностью и нагрузкой
   scrape_interval: {{ prometheus_scrape_interval }}
-  
-  # Как часто вычислять recording rules и alert rules
   evaluation_interval: {{ prometheus_evaluation_interval }}
-  
-  # Метки добавляемые ко всем метрикам и алертам
   external_labels:
-    # Идентификатор этого Prometheus (полезно при federation)
     monitor: 'prometheus-server'
 
-# ========================================
-# ALERTMANAGER CONNECTION
-# ========================================
 alerting:
   alertmanagers:
     - static_configs:
-        # Адрес Alertmanager
-        # Используем имя контейнера как hostname
         - targets: ['{{ alertmanager_container_name }}:9093']
 
-# ========================================
-# ALERT RULES FILES
-# ========================================
-# Пути к файлам с правилами алертов
 rule_files:
   - '/etc/prometheus/alerts/*.yml'
 
-# ========================================
-# SCRAPE CONFIGURATIONS
-# ========================================
-# Определяем откуда и как собирать метрики
 scrape_configs:
-
 {% for target in prometheus_static_targets %}
-  # ----------------------------------------
-  # Job: {{ target.job_name }}
-  # ----------------------------------------
   - job_name: '{{ target.job_name }}'
-    
 {% if target.metrics_path is defined %}
-    # Путь к метрикам (если отличается от /metrics)
     metrics_path: '{{ target.metrics_path }}'
 {% endif %}
-    
     static_configs:
       - targets: {{ target.targets | to_json }}
 {% if target.labels is defined %}
@@ -70,36 +34,39 @@ scrape_configs:
   # ----------------------------------------
   # Docker Service Discovery
   # ----------------------------------------
-  # Автоматически находит все контейнеры
-  # и собирает метрики с тех, кто их экспортирует
   - job_name: 'docker-containers'
     docker_sd_configs:
-      # Подключение к Docker daemon через socket
       - host: unix:///var/run/docker.sock
-        # Как часто обновлять список контейнеров
         refresh_interval: 30s
     
-    # Relabeling - преобразование меток
     relabel_configs:
-      # Извлекаем имя контейнера из Docker метаданных
+      # Имя контейнера
       - source_labels: ['__meta_docker_container_name']
-        # Убираем "/" в начале имени
         regex: '/(.*)'
         target_label: 'container_name'
         replacement: '$1'
       
-      # Добавляем label с именем Docker image
+      # Docker image
       - source_labels: ['__meta_docker_container_image']
         target_label: 'container_image'
       
-      # Добавляем label со статусом контейнера
+      # Статус контейнера
       - source_labels: ['__meta_docker_container_status']
         target_label: 'container_status'
       
-      # Если контейнер имеет label "prometheus.scrape=true"
-      # то скрапим его метрики
-      - source_labels: ['__meta_docker_container_label_prometheus_scrape']
-        regex: 'true'
+      # Сеть контейнера
+      - source_labels: ['__meta_docker_network_name']
+        target_label: 'docker_network'
+      
+      # УБРАЛИ фильтр prometheus.scrape=true
+      # Теперь Prometheus видит ВСЕ контейнеры
+      
+      # Формируем адрес для скрапинга из первого порта контейнера
+      - source_labels: ['__meta_docker_port_private']
+        target_label: '__meta_port'
+      
+      # Пропускаем контейнеры без открытых портов
+      - source_labels: ['__meta_docker_port_private']
+        regex: '.+'
         action: keep
 {% endif %}
-

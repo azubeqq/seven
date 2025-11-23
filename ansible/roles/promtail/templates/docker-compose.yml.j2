@@ -18,7 +18,7 @@ services:
     
     volumes:
       # Конфиг Promtail
-      - ./promtail-config.yml:/etc/promtail/promtail.yml:ro
+      - ./promtail.yml:/etc/promtail/promtail.yml:ro
       
       # Positions - writeable!
       # Promtail сохраняет сюда прогресс чтения

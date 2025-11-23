@@ -3,6 +3,10 @@
 
 # Перезапуск Docker при изменении конфига
 - name: Restart Docker
-  ansible.builtin.systemd:
+  systemd:
     name: docker
     state: restarted
+    daemon_reload: yes
+  register: docker_restart_result
+  failed_when: false
+  changed_when: docker_restart_result.rc == 0
